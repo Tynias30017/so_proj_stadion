@@ -2,7 +2,6 @@ from multiprocessing import Process, Semaphore, Lock, Event, Queue
 import time
 import random
 
-
 # Parametry stadionu
 K = 20  # Maksymalna liczba kibiców
 VIP_COUNT = max(1, int(0.005 * K))  # Liczba kibiców VIP
