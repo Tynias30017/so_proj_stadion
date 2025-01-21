@@ -1,0 +1,14 @@
+# Ignoruj folder wirtualnego środowiska
+.venv/
+
+# Ignoruj pliki PyCharm
+.idea/
+
+# Ignoruj pliki tymczasowe i logi
+*.log
+__pycache__/
+*.pyc
+
+# Ignoruj pliki systemowe
+.DS_Store
+Thumbs.db
