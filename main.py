@@ -1,6 +1,18 @@
 import time
 import random
 from multiprocessing import Process, Semaphore, Lock, Event, Queue, Value
+import logging
+
+# Konfiguracja loggera
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # Logi na konsolę
+        logging.FileHandler("stadion.log")  # Logi do pliku
+    ]
+)
+
 
 # Parametry stadionu
 K = 20  # Maksymalna liczba kibiców
@@ -24,11 +36,8 @@ log_queue = Queue()
 # Licznik aktywnych kibiców na stadionie
 aktywni_kibice = Value('i', 0)
 
-
 def log(message):
-    """Wysyła wiadomość do loggera."""
-    log_queue.put(f"[{time.strftime('%H:%M:%S')}] {message}")
-
+    logging.info(message)
 
 def logger():
     """Proces loggera - drukuje komunikaty z kolejki."""
@@ -38,10 +47,23 @@ def logger():
             break
         print(message)
 
+def dziecko_z_opiekunem(id, druzyna, wiek):
+    dziecko_opiekun_sync = Semaphore(0)
+
+    def dziecko():
+        log(f"Dziecko {id} z drużyny {druzyna} wchodzi na stadion.")
+        kibic(id, druzyna, "zwykły", wiek)
+        dziecko_opiekun_sync.release()  # Powiadom opiekuna
+
+    def opiekun():
+        dziecko_opiekun_sync.acquire()  # Czekaj na dziecko
+        log(f"Opiekun dziecka {id} z drużyny {druzyna} opuszcza stadion.")
+
+    Process(target=dziecko).start()
+    Process(target=opiekun).start()
 
 def kibic(id, druzyna, typ, wiek):
     """Proces reprezentujący kibica."""
-    global aktywni_kibice
     if typ == "VIP":
         log(f"Kibic VIP {id} wchodzi na stadion bez kontroli.")
         with aktywni_kibice.get_lock():
@@ -54,44 +76,39 @@ def kibic(id, druzyna, typ, wiek):
         time.sleep(0.1)  # Czeka na wznowienie kontroli
 
     while przepuszczeni_kibice <= 5:
-        with mutex:
-            # Szukanie stanowiska dla swojej drużyny
-            stanowisko_zajete = False
-            for stanowisko_id in range(MAX_STANOWISKO):
-                if stanowisko_druzyna[stanowisko_id].value in [-1, druzyna] and stanowiska[stanowisko_id].acquire(
-                        timeout=0.1):
-                    stanowisko_zajete = True
-                    with stanowisko_licznik[stanowisko_id].get_lock():
-                        stanowisko_licznik[stanowisko_id].value += 1
-                    if stanowisko_druzyna[stanowisko_id].value == -1:
-                        stanowisko_druzyna[stanowisko_id].value = druzyna
-                    log(f"Kibic {id} drużyny {druzyna} przechodzi kontrolę na stanowisku {stanowisko_id}.")
-                    time.sleep(random.uniform(0.5, 2))  # Symulacja czasu kontroli
-                    with stanowisko_licznik[stanowisko_id].get_lock():
-                        stanowisko_licznik[stanowisko_id].value -= 1
-                    if stanowisko_licznik[stanowisko_id].value == 0:
-                        stanowisko_druzyna[stanowisko_id].value = -1
-                    stanowiska[stanowisko_id].release()
-                    log(f"Kibic {id} drużyny {druzyna} wszedł na stadion.")
-                    with aktywni_kibice.get_lock():
-                        aktywni_kibice.value += 1
-                    return
+        # Szukanie stanowiska dla swojej drużyny
+        stanowisko_zajete = False
+        for stanowisko_id in range(MAX_STANOWISKO):
+            if stanowisko_druzyna[stanowisko_id].value in [-1, druzyna] and stanowiska[stanowisko_id].acquire(timeout=0.1):
+                stanowisko_zajete = True
+                with stanowisko_licznik[stanowisko_id].get_lock():
+                    stanowisko_licznik[stanowisko_id].value += 1
+                if stanowisko_druzyna[stanowisko_id].value == -1:
+                    stanowisko_druzyna[stanowisko_id].value = druzyna
+                log(f"Kibic {id} drużyny {druzyna} przechodzi kontrolę na stanowisku {stanowisko_id}.")
+                time.sleep(random.uniform(2, 3))  # Symulacja czasu kontroli
+                with stanowisko_licznik[stanowisko_id].get_lock():
+                    stanowisko_licznik[stanowisko_id].value -= 1
+                if stanowisko_licznik[stanowisko_id].value == 0:
+                    stanowisko_druzyna[stanowisko_id].value = -1
+                stanowiska[stanowisko_id].release()
+                log(f"Kibic {id} drużyny {druzyna} wszedł na stadion.")
+                with aktywni_kibice.get_lock():
+                    aktywni_kibice.value += 1
+                return
 
         if not stanowisko_zajete:
             przepuszczeni_kibice += 1
             time.sleep(0.1)
 
     log(f"Kibic {id} drużyny {druzyna} staje się agresywny i opuszcza kolejkę.")
-
+    with aktywni_kibice.get_lock():
+        aktywni_kibice.value -= 1
 
 def pracownik_techniczny(command_queue):
     """Proces obsługujący polecenia kierownika stadionu."""
-    global aktywni_kibice
     while True:
-        try:
-            command = command_queue.get(timeout=1)
-        except:
-            continue
+        command = command_queue.get()
 
         if command == "sygnał1":
             log("Kontrola wstrzymana.")
@@ -101,17 +118,19 @@ def pracownik_techniczny(command_queue):
             kontrola_zablokowana.set()
         elif command == "sygnał3":
             log("Wszyscy kibice opuszczają stadion.")
-            while aktywni_kibice.value > 0:
-                time.sleep(0.5)  # Czeka, aż wszyscy kibice opuszczą stadion
+            with aktywni_kibice.get_lock():
+                aktywni_kibice.value = 0
             log("Stadion jest pusty. Powiadomiono kierownika.")
             break
 
+def zatrzymaj_procesy(procesy):
+    for p in procesy:
+        if p.is_alive():
+            p.terminate()
+        p.join()
 
 def symulacja():
     """Funkcja główna zarządzająca symulacją."""
-    # Uruchomienie loggera
-    log_process = Process(target=logger)
-    log_process.start()
 
     # Kolejka do komunikacji z pracownikiem technicznym
     command_queue = Queue()
@@ -128,12 +147,7 @@ def symulacja():
         wiek = random.randint(10, 80)
 
         if wiek < 15:  # Dziecko
-            log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")
-            p1 = Process(target=kibic, args=(i, druzyna, "zwykły", wiek))
-            p2 = Process(target=kibic, args=(f"opiekun-{i}", druzyna, "zwykły", 30))
-            kibice.extend([p1, p2])
-            p1.start()
-            p2.start()
+            dziecko_z_opiekunem(i, druzyna, wiek)
         else:
             p = Process(target=kibic, args=(i, druzyna, typ, wiek))
             kibice.append(p)
@@ -142,22 +156,21 @@ def symulacja():
         time.sleep(random.uniform(0.1, 0.3))  # Kibice przychodzą stopniowo
 
     # Obsługa poleceń użytkownika
+    VALID_COMMANDS = {"sygnał1", "sygnał2", "sygnał3"}
     try:
         while True:
             command = input("Podaj polecenie (sygnał1, sygnał2, sygnał3): ").strip()
+            if command not in VALID_COMMANDS:
+                print("Nieprawidłowe polecenie. Spróbuj ponownie.")
+                continue
             command_queue.put(command)
             if command == "sygnał3":
                 break
     except KeyboardInterrupt:
-        print("Program zatrzymany przez użytkownika.")
-
-    # Oczekiwanie na zakończenie procesów kibiców
-    for p in kibice:
-        p.join()
-
-    # Zakończenie procesu loggera
-    log_queue.put("STOP")
-    log_process.join()
+        log("Program zatrzymany przez użytkownika.")
+    finally:
+        zatrzymaj_procesy(kibice + [pracownik])
+        log("Procesy zakończone.")
 
 
 if __name__ == "__main__":
