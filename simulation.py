@@ -1,11 +1,10 @@
 import random
 import time
-from multiprocessing import Process, Queue
+import os
 from controllers.fan import kibic
 from controllers.worker import pracownik_techniczny
 from Logger import log
 from Settings import K, VIP_COUNT
-
 
 def symulacja():
     """Funkcja główna zarządzająca symulacją."""
@@ -17,34 +16,54 @@ def symulacja():
             raise ValueError(
                 "Liczba VIP-ów (VIP_COUNT) musi być większa lub równa 0 i mniejsza niż liczba kibiców (K).")
 
-        # Inicjalizacja kolejki poleceń
+        # Inicjalizacja rury do komunikacji
         try:
-            command_queue = Queue()
+            read_fd, write_fd = os.pipe()
         except OSError as e:
-            log(f"Błąd podczas tworzenia kolejki poleceń: {e}")
+            log(f"Błąd podczas tworzenia rury: {e}")
             return
 
         # Uruchomienie procesu pracownika technicznego
         try:
-            pracownik = Process(target=pracownik_techniczny, args=(command_queue,))
-            pracownik.start()
+            pid = os.fork()
+            if pid == 0:
+                os.close(read_fd)
+                pracownik_techniczny(write_fd)
+                os._exit(0)
+            else:
+                os.close(write_fd)
         except OSError as e:
             log(f"Błąd podczas tworzenia procesu pracownika technicznego: {e}")
             return
 
         # Tworzenie procesów dla kibiców
-        kibice = []
+        kibice_pids = []
         for i in range(K):
             druzyna = random.choice([0, 1])
             typ = "VIP" if i < VIP_COUNT else "zwykły"
             wiek = random.randint(10, 80)
-            try:
-                p = Process(target=kibic, args=(i, druzyna, typ, wiek))
-                kibice.append(p)
-                p.start()
-            except OSError as e:
-                log(f"Błąd podczas tworzenia procesu kibica {i}: {e}")
-                return
+
+            if wiek < 15:  # Dziecko
+                log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")
+                # Proces dla dziecka
+                pid = os.fork()
+                if pid == 0:
+                    kibic(i, druzyna, "zwykły", wiek)
+                    os._exit(0)
+                kibice_pids.append(pid)
+                # Proces dla opiekuna (przyjmujemy wiek opiekuna jako 30 lat)
+                pid = os.fork()
+                if pid == 0:
+                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30)
+                    os._exit(0)
+                kibice_pids.append(pid)
+            else:
+                # Proces dla dorosłego kibica
+                pid = os.fork()
+                if pid == 0:
+                    kibic(i, druzyna, typ, wiek)
+                    os._exit(0)
+                kibice_pids.append(pid)
             time.sleep(random.uniform(0.1, 0.3))
 
         # Obsługa poleceń użytkownika
@@ -53,9 +72,9 @@ def symulacja():
                 command = input("Podaj polecenie (sygnał1, sygnał2, sygnał3): ").strip()
                 if command in {"sygnał1", "sygnał2", "sygnał3"}:
                     try:
-                        command_queue.put(command)
+                        os.write(write_fd, command.encode())
                     except OSError as e:
-                        log(f"Błąd podczas wysyłania polecenia do kolejki: {e}")
+                        log(f"Błąd podczas wysyłania polecenia do rury: {e}")
                         break
                     if command == "sygnał3":
                         break
@@ -67,24 +86,23 @@ def symulacja():
             log(f"Błąd systemowy podczas obsługi poleceń: {e}")
         finally:
             # Zakończenie wszystkich procesów kibiców
-            for p in kibice:
+            for pid in kibice_pids:
                 try:
-                    p.terminate()
+                    os.kill(pid, 9)
                 except OSError as e:
                     log(f"Błąd podczas zakończenia procesu kibica: {e}")
 
             # Zakończenie procesu pracownika technicznego
             try:
-                pracownik.terminate()
+                os.kill(pid, 9)
             except OSError as e:
                 log(f"Błąd podczas zakończenia procesu pracownika technicznego: {e}")
 
-
-            # Można usunąć kolejki i inne struktury systemowe, np.:
+            # Zamykanie rury
             try:
-                command_queue.close()  # Zamykanie kolejki
+                os.close(read_fd)
             except Exception as e:
-                log(f"Błąd podczas zamykania kolejki: {e}")
+                log(f"Błąd podczas zamykania rury: {e}")
 
             log("Zakończono program i usunięto wszystkie struktury.")
 
