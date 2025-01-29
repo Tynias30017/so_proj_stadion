@@ -1,6 +1,5 @@
 import time
 import random
-from multiprocessing import Semaphore, Process
 from Logger import log
 from Settings import stanowiska, stanowisko_druzyna, stanowisko_licznik, kontrola_zablokowana, aktywni_kibice
 
@@ -17,7 +16,7 @@ def kibic(id, druzyna, typ, wiek):
     while not kontrola_zablokowana.is_set():
         time.sleep(0.1)  # Czeka na wznowienie kontroli
 
-    while przepuszczeni_kibice <= 5:
+    while True:
         for stanowisko_id in range(len(stanowiska)):
             if stanowisko_druzyna[stanowisko_id].value in [-1, druzyna] and stanowiska[stanowisko_id].acquire(timeout=0.1):
                 with stanowisko_licznik[stanowisko_id].get_lock():
@@ -37,8 +36,6 @@ def kibic(id, druzyna, typ, wiek):
                 return
 
         przepuszczeni_kibice += 1
+        if przepuszczeni_kibice > 5:
+            log(f"Kibic {id} drużyny {druzyna} blokuje kolejkę, czekając na zwolnienie miejsca.")
         time.sleep(0.1)
-
-    log(f"Kibic {id} drużyny {druzyna} staje się agresywny i opuszcza kolejkę.")
-    with aktywni_kibice.get_lock():
-        aktywni_kibice.value -= 1
