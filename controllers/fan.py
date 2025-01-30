@@ -5,7 +5,17 @@ from Logger import log
 from Settings import stanowiska, stanowisko_druzyna, stanowisko_licznik, kontrola_zablokowana, aktywni_kibice
 
 def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
-    """Proces reprezentujący kibica."""
+    """
+    Proces reprezentujący kibica.
+
+    Parametry:
+    id (int): Identyfikator kibica.
+    druzyna (int): Drużyna kibica (0 lub 1).
+    typ (str): Typ kibica ('VIP' lub 'zwykły').
+    wiek (int): Wiek kibica.
+    is_child (bool): Czy kibic jest dzieckiem.
+    shared_pipe (Optional[int]): Opcjonalny deskryptor rury do komunikacji.
+    """
     if typ == "VIP":
         log(f"Kibic VIP {id} wchodzi na stadion bez kontroli.")
         with aktywni_kibice.get_lock():

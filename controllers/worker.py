@@ -4,7 +4,12 @@ from Settings import kontrola_zablokowana, aktywni_kibice
 import os
 
 def pracownik_techniczny(read_fd):
-    """Funkcja pracownika technicznego obsługująca polecenia."""
+    """
+    Funkcja pracownika technicznego obsługująca polecenia.
+
+    Parametry:
+    read_fd (int): Deskryptor pliku do odczytu z rury.
+    """
     try:
         while True:
             command = os.read(read_fd, 1024).decode()

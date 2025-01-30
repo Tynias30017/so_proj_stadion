@@ -7,7 +7,13 @@ from Logger import log
 from Settings import K, VIP_COUNT
 
 def symulacja():
-    """Funkcja główna zarządzająca symulacją."""
+    """
+    Główna funkcja zarządzająca symulacją.
+
+    Waliduje liczbę kibiców i VIP-ów, inicjalizuje rurę do komunikacji,
+    uruchamia proces pracownika technicznego oraz procesy dla kibiców.
+    Obsługuje polecenia użytkownika i kończy wszystkie procesy po zakończeniu symulacji.
+    """
     try:
         # Walidacja liczby kibiców i VIP-ów
         if K <= 0:
@@ -112,7 +118,11 @@ def symulacja():
         print(f"Wystąpił nieoczekiwany błąd: {e}")
 
 def pracownik_techniczny(read_fd):
-    """Funkcja obsługująca pracownika technicznego."""
+    """
+    Funkcja obsługująca pracownika technicznego.
+
+    Odczytuje polecenia z rury i wykonuje odpowiednie akcje w zależności od otrzymanego sygnału.
+    """
     try:
         while True:
             command = os.read(read_fd, 1024).decode()
