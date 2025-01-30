@@ -1,7 +1,7 @@
 from multiprocessing import Semaphore, Value, Event
 
 # Parametry stadionu
-K = 50  # Maksymalna liczba kibiców
+K = 10  # Maksymalna liczba kibiców
 VIP_COUNT = max(1, int(0.005 * K))  # Liczba kibiców VIP
 MAX_STANOWISKO = 3
 MAX_OSOBY_STANOWISKO = 3

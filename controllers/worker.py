@@ -1,20 +1,27 @@
 from multiprocessing import Queue
 from Logger import log
 from Settings import kontrola_zablokowana, aktywni_kibice
+import os
 
-def pracownik_techniczny(command_queue):
-    """Proces obsługujący polecenia kierownika stadionu."""
-    while True:
-        command = command_queue.get()
-        if command == "sygnał1":
-            log("Kontrola wstrzymana.")
-            kontrola_zablokowana.clear()
-        elif command == "sygnał2":
-            log("Kontrola wznowiona.")
-            kontrola_zablokowana.set()
-        elif command == "sygnał3":
-            log("Wszyscy kibice opuszczają stadion.")
-            with aktywni_kibice.get_lock():
-                aktywni_kibice.value = 0
-            log("Stadion jest pusty. Powiadomiono kierownika.")
-            break
+def pracownik_techniczny(read_fd):
+    """Funkcja pracownika technicznego obsługująca polecenia."""
+    try:
+        while True:
+            command = os.read(read_fd, 1024).decode()
+            if command:
+                if command == "sygnał1":
+                    # Obsługa sygnału 1
+                    print("Otrzymano sygnał 1")
+                elif command == "sygnał2":
+                    # Obsługa sygnału 2
+                    print("Otrzymano sygnał 2")
+                elif command == "sygnał3":
+                    # Obsługa sygnału 3 i zakończenie pracy
+                    print("Otrzymano sygnał 3, zakończenie pracy")
+                    break
+                else:
+                    print(f"Nieznane polecenie: {command}")
+    except OSError as e:
+        print(f"Błąd podczas odczytu z rury: {e}")
+    finally:
+        os.close(read_fd)

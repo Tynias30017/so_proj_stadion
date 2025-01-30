@@ -4,7 +4,7 @@ import os
 from controllers.fan import kibic
 from controllers.worker import pracownik_techniczny
 from Logger import log
-from Settings import K, VIP_COUNT, aktywni_kibice
+from Settings import K, VIP_COUNT
 
 def symulacja():
     """Funkcja główna zarządzająca symulacją."""
@@ -27,11 +27,11 @@ def symulacja():
         try:
             pid = os.fork()
             if pid == 0:
-                os.close(read_fd)
-                pracownik_techniczny(write_fd)
+                os.close(write_fd)
+                pracownik_techniczny(read_fd)
                 os._exit(0)
             else:
-                os.close(write_fd)
+                os.close(read_fd)
         except OSError as e:
             log(f"Błąd podczas tworzenia procesu pracownika technicznego: {e}")
             return
@@ -41,23 +41,22 @@ def symulacja():
         for i in range(K):
             druzyna = random.choice([0, 1])
             typ = "VIP" if i < VIP_COUNT else "zwykły"
-            wiek = random.randint(10, 14)
+            wiek = random.randint(10, 80)
 
             if wiek < 15:  # Dziecko
                 log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")
-                # Proces dla dziecka i opiekuna
+                # Proces dla dziecka
                 pid = os.fork()
                 if pid == 0:
-                    kibic(i, druzyna, "zwykły", wiek, is_child=True)
+                    kibic(i, druzyna, "zwykły", wiek)
                     os._exit(0)
                 kibice_pids.append(pid)
+                # Proces dla opiekuna (przyjmujemy wiek opiekuna jako 30 lat)
                 pid = os.fork()
                 if pid == 0:
-                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30, is_child=True)
+                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30)
                     os._exit(0)
                 kibice_pids.append(pid)
-                with aktywni_kibice.get_lock():
-                    aktywni_kibice.value += 2  # Dodajemy dziecko i opiekuna do liczby aktywnych kibiców
             else:
                 # Proces dla dorosłego kibica
                 pid = os.fork()
@@ -65,8 +64,6 @@ def symulacja():
                     kibic(i, druzyna, typ, wiek)
                     os._exit(0)
                 kibice_pids.append(pid)
-                with aktywni_kibice.get_lock():
-                    aktywni_kibice.value += 1  # Dodajemy dorosłego kibica do liczby aktywnych kibiców
             time.sleep(random.uniform(0.1, 0.3))
 
         # Obsługa poleceń użytkownika
@@ -103,7 +100,7 @@ def symulacja():
 
             # Zamykanie rury
             try:
-                os.close(read_fd)
+                os.close(write_fd)
             except Exception as e:
                 log(f"Błąd podczas zamykania rury: {e}")
 
