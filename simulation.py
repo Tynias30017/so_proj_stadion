@@ -4,7 +4,7 @@ import os
 from controllers.fan import kibic
 from controllers.worker import pracownik_techniczny
 from Logger import log
-from Settings import K, VIP_COUNT
+from Settings import K, VIP_COUNT, aktywni_kibice
 
 def symulacja():
     """Funkcja główna zarządzająca symulacją."""
@@ -41,22 +41,23 @@ def symulacja():
         for i in range(K):
             druzyna = random.choice([0, 1])
             typ = "VIP" if i < VIP_COUNT else "zwykły"
-            wiek = random.randint(10, 80)
+            wiek = random.randint(10, 14)
 
             if wiek < 15:  # Dziecko
                 log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")
-                # Proces dla dziecka
+                # Proces dla dziecka i opiekuna
                 pid = os.fork()
                 if pid == 0:
-                    kibic(i, druzyna, "zwykły", wiek)
+                    kibic(i, druzyna, "zwykły", wiek, is_child=True)
                     os._exit(0)
                 kibice_pids.append(pid)
-                # Proces dla opiekuna (przyjmujemy wiek opiekuna jako 30 lat)
                 pid = os.fork()
                 if pid == 0:
-                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30)
+                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30, is_child=True)
                     os._exit(0)
                 kibice_pids.append(pid)
+                with aktywni_kibice.get_lock():
+                    aktywni_kibice.value += 2  # Dodajemy dziecko i opiekuna do liczby aktywnych kibiców
             else:
                 # Proces dla dorosłego kibica
                 pid = os.fork()
@@ -64,6 +65,8 @@ def symulacja():
                     kibic(i, druzyna, typ, wiek)
                     os._exit(0)
                 kibice_pids.append(pid)
+                with aktywni_kibice.get_lock():
+                    aktywni_kibice.value += 1  # Dodajemy dorosłego kibica do liczby aktywnych kibiców
             time.sleep(random.uniform(0.1, 0.3))
 
         # Obsługa poleceń użytkownika
