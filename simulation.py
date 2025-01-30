@@ -41,7 +41,7 @@ def symulacja():
         for i in range(K):
             druzyna = random.choice([0, 1])
             typ = "VIP" if i < VIP_COUNT else "zwykły"
-            wiek = random.randint(10, 80)
+            wiek = random.randint(20, 80)
 
             if wiek < 15:  # Dziecko
                 log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")
@@ -110,3 +110,24 @@ def symulacja():
         print(f"Błąd walidacji danych wejściowych: {ve}")
     except Exception as e:
         print(f"Wystąpił nieoczekiwany błąd: {e}")
+
+def pracownik_techniczny(read_fd):
+    """Funkcja obsługująca pracownika technicznego."""
+    try:
+        while True:
+            command = os.read(read_fd, 1024).decode()
+            if command == "sygnał1":
+                log("Pracownik techniczny wstrzymuje wpuszczanie kibiców.")
+                # Implementacja wstrzymania wpuszczania kibiców
+            elif command == "sygnał2":
+                log("Pracownik techniczny wznawia wpuszczanie kibiców.")
+                # Implementacja wznowienia wpuszczania kibiców
+            elif command == "sygnał3":
+                log("Pracownik techniczny rozpoczyna opuszczanie stadionu przez kibiców.")
+                # Implementacja opuszczania stadionu przez kibiców
+                break
+    except Exception as e:
+        log(f"Błąd w procesie pracownika technicznego: {e}")
+    finally:
+        os.close(read_fd)
+        log("Pracownik techniczny zakończył pracę.")
