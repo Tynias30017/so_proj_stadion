@@ -1,10 +1,11 @@
+# controllers/fan.py
 import time
 import random
 import os
 from Logger import log
 from Settings import stanowiska, stanowisko_druzyna, stanowisko_licznik, kontrola_zablokowana, aktywni_kibice
 
-def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
+def kibic(id, druzyna, typ, wiek, bron, is_child=False, shared_pipe=None):
     """
     Proces reprezentujący kibica.
 
@@ -13,6 +14,7 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
     druzyna (int): Drużyna kibica (0 lub 1).
     typ (str): Typ kibica ('VIP' lub 'zwykły').
     wiek (int): Wiek kibica.
+    bron (bool): Czy kibic posiada broń.
     is_child (bool): Czy kibic jest dzieckiem.
     shared_pipe (Optional[int]): Opcjonalny deskryptor rury do komunikacji.
     """
@@ -20,6 +22,10 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
         log(f"Kibic VIP {id} wchodzi na stadion bez kontroli.")
         with aktywni_kibice.get_lock():
             aktywni_kibice.value += 1
+        return
+
+    if bron:
+        log(f"Kibic {id} drużyny {druzyna} posiada broń i nie może wejść na stadion.")
         return
 
     przepuszczeni_kibice = 0

@@ -48,26 +48,27 @@ def symulacja():
             druzyna = random.choice([0, 1])
             typ = "VIP" if i < VIP_COUNT else "zwykły"
             wiek = random.randint(20, 80)
+            bron = random.random() < 1  # 5% szans na posiadanie broni
 
             if wiek < 15:  # Dziecko
                 log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")
                 # Proces dla dziecka
                 pid = os.fork()
                 if pid == 0:
-                    kibic(i, druzyna, "zwykły", wiek)
+                    kibic(i, druzyna, "zwykły", wiek, bron)
                     os._exit(0)
                 kibice_pids.append(pid)
                 # Proces dla opiekuna (przyjmujemy wiek opiekuna jako 30 lat)
                 pid = os.fork()
                 if pid == 0:
-                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30)
+                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30, False)
                     os._exit(0)
                 kibice_pids.append(pid)
             else:
                 # Proces dla dorosłego kibica
                 pid = os.fork()
                 if pid == 0:
-                    kibic(i, druzyna, typ, wiek)
+                    kibic(i, druzyna, typ, wiek, bron)
                     os._exit(0)
                 kibice_pids.append(pid)
             time.sleep(random.uniform(0.1, 0.3))
