@@ -29,9 +29,9 @@ def kibic(id, druzyna, typ, wiek, bron, is_child=False, shared_pipe=None):
                 # Create a temporary pipe for communication
                 temp_read_fd, temp_write_fd = os.pipe()
                 try:
-                    # Send the value of bron
-                    os.write(temp_write_fd, str(bron).encode())
-                    log(f"Kibic {id} wysłał wartość bron: {bron}")
+                    bron_text = "tak" if bron else "nie"
+                    os.write(temp_write_fd, bron_text.encode())
+                    log(f"Kibic {id} wysłał wartość bron: {bron_text}")
 
                     # Send the temporary pipe file descriptors to the worker
                     os.write(shared_pipe, f"{temp_read_fd},{temp_write_fd}".encode())
@@ -40,11 +40,11 @@ def kibic(id, druzyna, typ, wiek, bron, is_child=False, shared_pipe=None):
                     log(f"Kibic {id} otrzymał odpowiedź: {response}")
                     if response == "1":
                         log(f"Kibic {id} drużyny {druzyna} nie został wpuszczony, ponieważ posiadał broń.")
-                        return
+                        os._exit(0)
                 finally:
                     os.close(temp_read_fd)
                     os.close(temp_write_fd)
-                    log("Zamknięto tymczasową rurę.")
+                    log("Zamknięto tymczasową rurę. fan")
 
                 time.sleep(random.uniform(2, 3))
                 with stanowisko_licznik[stanowisko_id].get_lock():
