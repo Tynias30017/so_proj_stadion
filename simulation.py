@@ -49,7 +49,7 @@ def symulacja():
             druzyna = random.choice([0, 1])
             typ = "VIP" if i < VIP_COUNT else "zwykły"
             wiek = random.randint(20, 80)
-            bron = random.random() < 0.05  # 5% szans na posiadanie broni
+            bron = 1 if random.randint(1, 100) in range(1, 101) else 0
 
             if wiek < 15:  # Dziecko
                 log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")

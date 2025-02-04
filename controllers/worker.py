@@ -21,8 +21,8 @@ def pracownik_techniczny(read_fd):
                 break
             else:
                 # Handle temporary pipe communication
-                temp_read_fd, temp_write_fd = map(int, command.split(","))
                 try:
+                    temp_read_fd, temp_write_fd = map(int, command.split(","))
                     fan_command = os.read(temp_read_fd, 1024).decode()
                     log(f"Otrzymano wartość bron od kibica: {fan_command}")
                     if fan_command == "1":
