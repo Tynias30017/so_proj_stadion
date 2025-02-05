@@ -12,6 +12,6 @@ stanowisko_druzyna = [Value('i', -1) for _ in range(MAX_STANOWISKO)]  # -1 oznac
 stanowisko_licznik = [Value('i', 0) for _ in range(MAX_STANOWISKO)]  # Liczba osób na stanowisku
 
 kontrola_zablokowana = Event()
-kontrola_zablokowana.set()  # Domyślnie kontrola jest aktywna
+kontrola_zablokowana.clear()  # Domyślnie kontrola jest aktywna
 
 aktywni_kibice = Value('i', 0)

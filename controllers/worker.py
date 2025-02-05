@@ -17,9 +17,11 @@ def pracownik_techniczny(read_fd, koniec_meczu=None):
                 if command == "sygnał1":
                     # Obsługa sygnału 1
                     print("Otrzymano sygnał 1")
+                    kontrola_zablokowana.clear()
                 elif command == "sygnał2":
                     # Obsługa sygnału 2
                     print("Otrzymano sygnał 2")
+                    kontrola_zablokowana.set()
                 elif command == "sygnał3":
                     # Obsługa sygnału 3 i zakończenie pracy
                     print("Otrzymano sygnał 3, zakończenie pracy")
