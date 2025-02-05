@@ -1,47 +1,44 @@
-import os
+from multiprocessing import Queue
 from Logger import log
 from Settings import kontrola_zablokowana, aktywni_kibice
+import os
 
-def pracownik_techniczny(read_fd):
+def pracownik_techniczny(read_fd, fan_read_fd):
     """
-    Funkcja obsługująca pracownika technicznego.
+    Funkcja pracownika technicznego obsługująca polecenia.
 
-    Odczytuje polecenia z rury i wykonuje odpowiednie akcje w zależności od otrzymanego sygnału.
+    Parametry:
+    read_fd (int): Deskryptor pliku do odczytu z rury.
     """
     try:
         while True:
             command = os.read(read_fd, 1024).decode()
-            log(f"Otrzymano sygnał: {command}")
-            if command == "sygnał1":
-                log("Pracownik techniczny wstrzymuje wpuszczanie kibiców.")
-            elif command == "sygnał2":
-                log("Pracownik techniczny wznawia wpuszczanie kibiców.")
-            elif command == "sygnał3":
-                log("Pracownik techniczny rozpoczyna opuszczanie stadionu przez kibiców.")
-                break
-            elif command in {"tak", "nie"}:
-                # Handle temporary pipe communication
+            if command:
+                if command == "sygnał1":
+                    # Obsługa sygnału 1
+                    print("Otrzymano sygnał 1")
+                elif command == "sygnał2":
+                    # Obsługa sygnału 2
+                    print("Otrzymano sygnał 2")
+                elif command == "sygnał3":
+                    # Obsługa sygnału 3 i zakończenie pracy
+                    print("Otrzymano sygnał 3, zakończenie pracy")
+                    break
+                    # Read and log PIDs from fans
                 try:
-                    temp_read_fd, temp_write_fd = os.pipe()
-                    log(f"Tworzenie tymczasowej rury: read_fd={temp_read_fd}, write_fd={temp_write_fd}")
-                    fan_command = command
-                    log(f"Otrzymano wartość bron od kibica: {fan_command}")
-                    if fan_command == "tak":
-                        os.write(temp_write_fd, "1".encode())
-                        log("Wysłano odpowiedź: 1 (NIE WPUSZCZONY)")
-                    else:
-                        os.write(temp_write_fd, "0".encode())
-                        log("Wysłano odpowiedź: 0 (WPUSZCZONY)")
+                    pid = os.read(fan_read_fd, 1024).decode()
+                    if pid:
+                        log(f"Kibic o PID {pid} wszedł na stadion.")
+                except OSError as e:
+                        log(f"Błąd podczas odczytu PID z rury: {e}")
+
                 except Exception as e:
-                    log(f"Błąd podczas obsługi tymczasowej rury: {e}")
+                    log(f"Błąd w procesie pracownika technicznego: {e}")
                 finally:
-                    os.close(temp_read_fd)
-                    os.close(temp_write_fd)
-                    log("Zamknięto tymczasową rurę.")
-            else:
-                log(f"Nieznany sygnał: {command}")
-    except Exception as e:
-        log(f"Błąd w procesie pracownika technicznego: {e}")
+                    os.close(read_fd)
+                    os.close(fan_read_fd)
+                    log("Pracownik techniczny zakończył pracę.")
+    except OSError as e:
+        print(f"Błąd podczas odczytu z rury: {e}")
     finally:
         os.close(read_fd)
-        log("Pracownik techniczny zakończył pracę.")

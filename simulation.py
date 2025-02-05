@@ -25,7 +25,7 @@ def symulacja():
         # Inicjalizacja rury do komunikacji
         try:
             read_fd, write_fd = os.pipe()
-            log("Rura do komunikacji została utworzona.")
+            fan_read_fd, fan_write_fd = os.pipe()
         except OSError as e:
             log(f"Błąd podczas tworzenia rury: {e}")
             return
@@ -49,27 +49,26 @@ def symulacja():
             druzyna = random.choice([0, 1])
             typ = "VIP" if i < VIP_COUNT else "zwykły"
             wiek = random.randint(20, 80)
-            bron = 1 if random.randint(1, 100) in range(1, 101) else 0
 
             if wiek < 15:  # Dziecko
                 log(f"Dziecko {i} z drużyny {druzyna} wchodzi z opiekunem.")
                 # Proces dla dziecka
                 pid = os.fork()
                 if pid == 0:
-                    kibic(i, druzyna, "zwykły", wiek, bron, shared_pipe=write_fd)
+                    kibic(i, druzyna, "zwykły", wiek, shared_pipe=fan_write_fd)
                     os._exit(0)
                 kibice_pids.append(pid)
                 # Proces dla opiekuna (przyjmujemy wiek opiekuna jako 30 lat)
                 pid = os.fork()
                 if pid == 0:
-                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30, False, shared_pipe=write_fd)
+                    kibic(f"opiekun-{i}", druzyna, "zwykły", 30, shared_pipe=fan_write_fd)
                     os._exit(0)
                 kibice_pids.append(pid)
             else:
                 # Proces dla dorosłego kibica
                 pid = os.fork()
                 if pid == 0:
-                    kibic(i, druzyna, typ, wiek, bron, shared_pipe=write_fd)
+                    kibic(i, druzyna, typ, wiek, shared_pipe=fan_write_fd)
                     os._exit(0)
                 kibice_pids.append(pid)
             time.sleep(random.uniform(0.1, 0.3))
@@ -118,3 +117,28 @@ def symulacja():
         print(f"Błąd walidacji danych wejściowych: {ve}")
     except Exception as e:
         print(f"Wystąpił nieoczekiwany błąd: {e}")
+
+def pracownik_techniczny(read_fd):
+    """
+    Funkcja obsługująca pracownika technicznego.
+
+    Odczytuje polecenia z rury i wykonuje odpowiednie akcje w zależności od otrzymanego sygnału.
+    """
+    try:
+        while True:
+            command = os.read(read_fd, 1024).decode()
+            if command == "sygnał1":
+                log("Pracownik techniczny wstrzymuje wpuszczanie kibiców.")
+                # Implementacja wstrzymania wpuszczania kibiców
+            elif command == "sygnał2":
+                log("Pracownik techniczny wznawia wpuszczanie kibiców.")
+                # Implementacja wznowienia wpuszczania kibiców
+            elif command == "sygnał3":
+                log("Pracownik techniczny rozpoczyna opuszczanie stadionu przez kibiców.")
+                # Implementacja opuszczania stadionu przez kibiców
+                break
+    except Exception as e:
+        log(f"Błąd w procesie pracownika technicznego: {e}")
+    finally:
+        os.close(read_fd)
+        log("Pracownik techniczny zakończył pracę.")
