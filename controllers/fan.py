@@ -37,7 +37,7 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None, koniec_meczu
                 if stanowisko_druzyna[stanowisko_id].value == -1:
                     stanowisko_druzyna[stanowisko_id].value = druzyna
                 log(f"Kibic {id} drużyny {druzyna} przechodzi kontrolę na stanowisku {stanowisko_id}. Liczba osób na stanowisku: {liczba_osob}.")
-                time.sleep(random.uniform(2, 3))  # Symulacja czasu kontroli
+                time.sleep(random.uniform(2, 3))  
                 if random.random() < 0.2:
                     log(f"Kibic {id} drużyny {druzyna} posiada bron.")
                     os._exit(0)
