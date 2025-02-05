@@ -91,14 +91,6 @@ def symulacja():
                     # os.kill(pid, 9)
                 except OSError as e:
                     log(f"Błąd podczas zakończenia procesu kibica: {e}")
-
-            # Zakończenie procesu pracownika technicznego
-            # try:
-            #     os.kill(pid, 9)
-            # except OSError as e:
-            #     log(f"Błąd podczas zakończenia procesu pracownika technicznego: {e}")
-
-            # Zamykanie rury
             try:
                 write_fd.close()
             except Exception as e:
