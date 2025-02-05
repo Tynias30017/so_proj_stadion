@@ -22,12 +22,10 @@ def pracownik_techniczny(read_fd, koniec_meczu=None):
                     print("Otrzymano sygnał 2")
                 elif command == "sygnał3":
                     # Obsługa sygnału 3 i zakończenie pracy
-                    koniec_meczu.set()
                     print("Otrzymano sygnał 3, zakończenie pracy")
+                    koniec_meczu.set()
                     break
                 else:
                     print(f"Nieznane polecenie: {command}")
     except OSError as e:
         print(f"Błąd podczas odczytu z rury: {e}")
-    finally:
-        os.close(read_fd)

@@ -38,7 +38,7 @@ def symulacja():
         try:
             pid = os.fork()
             if pid == 0:
-                pracownik_techniczny(read_fd)
+                pracownik_techniczny(read_fd, koniec_meczu)
                 os._exit(0)
         except OSError as e:
             log(f"Błąd podczas tworzenia procesu pracownika technicznego: {e}")
@@ -76,19 +76,9 @@ def symulacja():
 
         # Obsługa poleceń użytkownika
         try:
-            while True:
+            while not koniec_meczu.is_set():
                 command = input("Podaj polecenie (sygnał1, sygnał2, sygnał3): ").strip()
-                if command in {"sygnał1", "sygnał2", "sygnał3"}:
-                    # try:
-                    #     os.write(write_fd, command.encode())
-                    # except OSError as e:
-                    #     log(f"Błąd podczas wysyłania polecenia do rury: {e}")
-                    #     break
-                    if command == "sygnał3":
-                        koniec_meczu.set()
-                        break
-                else:
-                    print("Nieprawidłowe polecenie. Dostępne polecenia to: sygnał1, sygnał2, sygnał3.")
+                write_fd.send(command)
         except KeyboardInterrupt:
             log("Program zatrzymany przez użytkownika.")
         except OSError as e:

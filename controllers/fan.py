@@ -31,9 +31,6 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None, koniec_meczu
     while True:
         for stanowisko_id in range(len(stanowiska)):
             if stanowisko_druzyna[stanowisko_id].value in [-1, druzyna] and stanowiska[stanowisko_id].acquire(timeout=0.1):
-                # if shared_pipe:
-                    # shared_pipe.send(stanowisko_id)
-                    #stanowisko_id = int(os.read(shared_pipe, 1).decode())
                 with stanowisko_licznik[stanowisko_id].get_lock():
                     stanowisko_licznik[stanowisko_id].value += 1
                     liczba_osob = stanowisko_licznik[stanowisko_id].value
