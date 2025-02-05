@@ -38,11 +38,8 @@ def symulacja():
         try:
             pid = os.fork()
             if pid == 0:
-                os.close(write_fd)
                 pracownik_techniczny(read_fd)
                 os._exit(0)
-            else:
-                os.close(read_fd)
         except OSError as e:
             log(f"Błąd podczas tworzenia procesu pracownika technicznego: {e}")
             return
@@ -82,12 +79,13 @@ def symulacja():
             while True:
                 command = input("Podaj polecenie (sygnał1, sygnał2, sygnał3): ").strip()
                 if command in {"sygnał1", "sygnał2", "sygnał3"}:
-                    try:
-                        os.write(write_fd, command.encode())
-                    except OSError as e:
-                        log(f"Błąd podczas wysyłania polecenia do rury: {e}")
-                        break
+                    # try:
+                    #     os.write(write_fd, command.encode())
+                    # except OSError as e:
+                    #     log(f"Błąd podczas wysyłania polecenia do rury: {e}")
+                    #     break
                     if command == "sygnał3":
+                        koniec_meczu.set()
                         break
                 else:
                     print("Nieprawidłowe polecenie. Dostępne polecenia to: sygnał1, sygnał2, sygnał3.")
@@ -99,19 +97,20 @@ def symulacja():
             # Zakończenie wszystkich procesów kibiców
             for pid in kibice_pids:
                 try:
-                    os.kill(pid, 9)
+                    os.waitpid(pid, 0)
+                    # os.kill(pid, 9)
                 except OSError as e:
                     log(f"Błąd podczas zakończenia procesu kibica: {e}")
 
             # Zakończenie procesu pracownika technicznego
-            try:
-                os.kill(pid, 9)
-            except OSError as e:
-                log(f"Błąd podczas zakończenia procesu pracownika technicznego: {e}")
+            # try:
+            #     os.kill(pid, 9)
+            # except OSError as e:
+            #     log(f"Błąd podczas zakończenia procesu pracownika technicznego: {e}")
 
             # Zamykanie rury
             try:
-                os.close(write_fd)
+                write_fd.close()
             except Exception as e:
                 log(f"Błąd podczas zamykania rury: {e}")
 
@@ -121,4 +120,5 @@ def symulacja():
         print(f"Błąd walidacji danych wejściowych: {ve}")
     except Exception as e:
         print(f"Wystąpił nieoczekiwany błąd: {e}")
+        raise e
 

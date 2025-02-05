@@ -31,9 +31,9 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None, koniec_meczu
     while True:
         for stanowisko_id in range(len(stanowiska)):
             if stanowisko_druzyna[stanowisko_id].value in [-1, druzyna] and stanowiska[stanowisko_id].acquire(timeout=0.1):
-                if shared_pipe:
-                    os.write(shared_pipe, str(stanowisko_id).encode())
-                    stanowisko_id = int(os.read(shared_pipe, 1).decode())
+                # if shared_pipe:
+                    # shared_pipe.send(stanowisko_id)
+                    #stanowisko_id = int(os.read(shared_pipe, 1).decode())
                 with stanowisko_licznik[stanowisko_id].get_lock():
                     stanowisko_licznik[stanowisko_id].value += 1
                     liczba_osob = stanowisko_licznik[stanowisko_id].value
@@ -43,8 +43,8 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None, koniec_meczu
                 time.sleep(random.uniform(2, 3))  # Symulacja czasu kontroli
                 if random.random() < 0.2:
                     log(f"Kibic {id} drużyny {druzyna} posiada bron.")
-                    os.kill()
-                    # Tutaj dodaj kod dla dodatkowej akcji
+                    os._exit(0)
+
                 with stanowisko_licznik[stanowisko_id].get_lock():
                     stanowisko_licznik[stanowisko_id].value -= 1
                 if stanowisko_licznik[stanowisko_id].value == 0:
