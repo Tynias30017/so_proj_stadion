@@ -1,10 +1,11 @@
 import time
 import random
+from time import sleep
 import os
 from Logger import log
 from Settings import stanowiska, stanowisko_druzyna, stanowisko_licznik, kontrola_zablokowana, aktywni_kibice
 
-def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
+def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None, koniec_meczu=None):
     """
     Proces reprezentujący kibica.
 
@@ -20,8 +21,6 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
         log(f"Kibic VIP {id} wchodzi na stadion bez kontroli.")
         with aktywni_kibice.get_lock():
             aktywni_kibice.value += 1
-        while True:
-            time.sleep(1)
         return
 
     przepuszczeni_kibice = 0
@@ -42,6 +41,10 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
                     stanowisko_druzyna[stanowisko_id].value = druzyna
                 log(f"Kibic {id} drużyny {druzyna} przechodzi kontrolę na stanowisku {stanowisko_id}. Liczba osób na stanowisku: {liczba_osob}.")
                 time.sleep(random.uniform(2, 3))  # Symulacja czasu kontroli
+                if random.random() < 0.2:
+                    log(f"Kibic {id} drużyny {druzyna} posiada bron.")
+                    os.kill()
+                    # Tutaj dodaj kod dla dodatkowej akcji
                 with stanowisko_licznik[stanowisko_id].get_lock():
                     stanowisko_licznik[stanowisko_id].value -= 1
                 if stanowisko_licznik[stanowisko_id].value == 0:
@@ -50,10 +53,9 @@ def kibic(id, druzyna, typ, wiek, is_child=False, shared_pipe=None):
                 log(f"Kibic {id} drużyny {druzyna} wszedł na stadion.")
                 with aktywni_kibice.get_lock():
                     aktywni_kibice.value += 1
-                    if shared_pipe:
-                        os.write(shared_pipe, str(os.getpid()).encode())
-                while True:
-                    time.sleep(1)
+                koniec_meczu.wait()
+                sleep(1)
+                log(f"Kibic {id} drużyny {druzyna} opuścił stadion")
                 return
 
         przepuszczeni_kibice += 1

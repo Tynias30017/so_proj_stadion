@@ -3,7 +3,7 @@ from Logger import log
 from Settings import kontrola_zablokowana, aktywni_kibice
 import os
 
-def pracownik_techniczny(read_fd, fan_read_fd):
+def pracownik_techniczny(read_fd, koniec_meczu=None):
     """
     Funkcja pracownika technicznego obsługująca polecenia.
 
@@ -12,7 +12,7 @@ def pracownik_techniczny(read_fd, fan_read_fd):
     """
     try:
         while True:
-            command = os.read(read_fd, 1024).decode()
+            command = read_fd.recv()
             if command:
                 if command == "sygnał1":
                     # Obsługa sygnału 1
@@ -22,22 +22,11 @@ def pracownik_techniczny(read_fd, fan_read_fd):
                     print("Otrzymano sygnał 2")
                 elif command == "sygnał3":
                     # Obsługa sygnału 3 i zakończenie pracy
+                    koniec_meczu.set()
                     print("Otrzymano sygnał 3, zakończenie pracy")
                     break
-                    # Read and log PIDs from fans
-                try:
-                    pid = os.read(fan_read_fd, 1024).decode()
-                    if pid:
-                        log(f"Kibic o PID {pid} wszedł na stadion.")
-                except OSError as e:
-                        log(f"Błąd podczas odczytu PID z rury: {e}")
-
-                except Exception as e:
-                    log(f"Błąd w procesie pracownika technicznego: {e}")
-                finally:
-                    os.close(read_fd)
-                    os.close(fan_read_fd)
-                    log("Pracownik techniczny zakończył pracę.")
+                else:
+                    print(f"Nieznane polecenie: {command}")
     except OSError as e:
         print(f"Błąd podczas odczytu z rury: {e}")
     finally:
